@@ -1,6 +1,9 @@
 <!DOCTYPE HTML>
 <html>
 <div id="wc"></div>
+1. Download you search data from <link rel="Google Takeout" title="Google Takeout" href="https://www.google.com/settings/takeout"/>
+2. Unzip, then select file(s) using the button bellow.
+*NOTE* Everything is done locally in your browser. None of your data will be uploaded to any remote server. 
 <input type="file" id="files" name="files[]" multiple />
 <output id="list"></output>
 <output id="queries"></output>
@@ -102,7 +105,7 @@
       strings.push(f['query']['query_text'])
     }
 
-    document.getElementById('queries').innerHTML = '<ul>' + output.join('') + '</ul>';
+    document.getElementById('queries').innerHTML = '<br>Searches:<br><ul>' + output.join('') + '</ul>';
     // document.getElementById('allqueries').innerHTML = strings.join(' ');
     // console.log(processData(strings))
     draw_cloud(processData(strings))
