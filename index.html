@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+<html>
+<div id="wc"></div>
+<input type="file" id="files" name="files[]" multiple />
+<output id="list"></output>
+<output id="queries"></output>
+<output id="allqueries"></output>
+
+<script src="lib/d3/d3.js"></script>
+<script src="d3.layout.cloud.js"></script>
+
+<script>
+  // Based on http://www.jasondavies.com/wordcloud/
+  var fill = d3.scale.category20();
+  
+  function draw_cloud(words_data) {
+    d3.layout.cloud().size([300, 300])
+        .words(words_data)
+        .padding(5)
+        .rotate(function() { return ~~(Math.random() * 2) * 90; })
+        .font("Impact")
+        .fontSize(function(d) { return d.size; })
+        .on("end", draw)
+        .start();    
+  }
+
+  function draw(words) {
+    d3.selectAll("#wc").append("svg")
+        .attr("width", 300)
+        .attr("height", 300)
+      .append("g")
+        .attr("transform", "translate(150,150)")
+      .selectAll("text")
+        .data(words)
+      .enter().append("text")
+        .style("font-size", function(d) { return d.size + "px"; })
+        .style("font-family", "Impact")
+        .style("fill", function(d, i) { return fill(i); })
+        .attr("text-anchor", "middle")
+        .attr("transform", function(d) {
+          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+        })
+        .text(function(d) { return d.text; });
+  }
+
+  // draw_cloud([
+  //         "Hello", "world", "normally", "you", "want", "more", "words",
+  //         "than", "this"].map(function(d) {
+  //         return {text: d, size: 10 + Math.random() * 90};
+  //       }))
+
+  draw_cloud([{text:'What',size:25},
+    {text:'words',size:40},
+    {text:'do',size:35},
+    {text:'I',size:35},
+    {text:'Google',size:45},
+    {text:'?',size:60},])
+
+  // Adapted from https://github.com/pubnub/d3-wordcloud/
+  function processData(strings) { 
+    if(!strings) return;
+
+    // convert the array to a long string
+    strings = strings.join(' ');
+    
+    // strip stringified objects and punctuations from the string
+    strings = strings.toLowerCase().replace(/object Object/g, '').replace(/[\+\.,\/#!$%\^&\*{}=_`~]/g,'');
+    
+    // convert the str back in an array 
+    strings = strings.split(' '); 
+
+    // Count frequency of word occurance
+    var wordCount = {};
+
+    for(var i = 0; i < strings.length; i++) {
+        if(!wordCount[strings[i]])
+            wordCount[strings[i]] = 0;
+
+        wordCount[strings[i]]++; // {'hi': 12, 'foo': 2 ...}
+    }
+
+    //console.log(wordCount);
+
+    var wordCountArr = [];
+
+    for(var prop in wordCount) {
+      wordCountArr.push({text: prop, size: wordCount[prop]});
+    }
+    
+    return wordCountArr;
+  }
+
+  function get_words(data) {
+    var queries = data['event']
+    var output = []
+    var strings = []
+    for (var i = 0, f; f = queries[i]; i++) {
+      console.log(f['query']['query_text'])
+      output.push('<li><strong>', i, '</strong> - ',
+                  f['query']['query_text'],
+                  '</li>');
+      strings.push(f['query']['query_text'])
+    }
+
+    document.getElementById('queries').innerHTML = '<ul>' + output.join('') + '</ul>';
+    // document.getElementById('allqueries').innerHTML = strings.join(' ');
+    // console.log(processData(strings))
+    draw_cloud(processData(strings))
+
+  }
+  function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+
+    // files is a FileList of File objects. List some properties.
+    var output = [];
+    var newArr 
+    for (var i = 0, f; f = files[i]; i++) {
+      output.push('<li><strong>', f.name, '</strong> (', f.type || 'n/a', ') - ',
+                  f.size, ' bytes, last modified: ',
+                  f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                  '</li>');
+      var reader = new FileReader();
+
+      // Closure to capture the file information.
+      reader.onload = (function(theFile) {
+        return function(e) {
+          // var span = document.createElement('span');
+          // span.innerHTML = [escape(theFile.name), ' is the name <br>'].join('');
+          // document.getElementById('list').insertBefore(span, null);
+          var jsonobj = JSON.parse(e.target.result);
+          get_words(jsonobj)
+        };
+      })(f);
+
+      // Read in the file
+      reader.readAsText(f);
+    }
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+</script>
+
+</html>
